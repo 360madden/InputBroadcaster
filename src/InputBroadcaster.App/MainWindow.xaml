@@ -1,10 +1,132 @@
+<!-- Version: 0.1.0 -->
+<!-- Total Characters: 5046 -->
+<!-- Purpose: Provide a functional WPF shell for window enumeration, leader/follower selection, and broadcast state display. -->
+
 <Window x:Class="InputBroadcaster.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="InputBroadcaster"
-        Height="450"
-        Width="800">
-    <Grid Margin="12">
-        <TextBlock FontSize="20" FontWeight="Bold" Text="InputBroadcaster" />
+        Height="620"
+        Width="980"
+        MinHeight="540"
+        MinWidth="900">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock FontSize="24"
+                           FontWeight="Bold"
+                           Text="InputBroadcaster" />
+                <TextBlock Margin="0,6,0,0"
+                           Foreground="DimGray"
+                           Text="MVP shell for one leader window, one follower window, allowlist-only keyboard broadcasting." />
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Padding="16,8"
+                    Margin="16,0,0,0"
+                    VerticalAlignment="Top"
+                    Click="RefreshWindowsButton_OnClick"
+                    Content="Refresh Windows" />
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Grid.Column="0" Header="Leader Window">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ComboBox x:Name="LeaderComboBox"
+                              MinWidth="280"
+                              DisplayMemberPath="DisplayName" />
+
+                    <Button Grid.Row="2"
+                            Width="120"
+                            HorizontalAlignment="Left"
+                            Click="SetLeaderButton_OnClick"
+                            Content="Set Leader" />
+                </Grid>
+            </GroupBox>
+
+            <GroupBox Grid.Column="2" Header="Follower Window">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ComboBox x:Name="FollowerComboBox"
+                              MinWidth="280"
+                              DisplayMemberPath="DisplayName" />
+
+                    <Button Grid.Row="2"
+                            Width="120"
+                            HorizontalAlignment="Left"
+                            Click="SetFollowerButton_OnClick"
+                            Content="Set Follower" />
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <GroupBox Grid.Row="4" Header="Broadcast State">
+            <Grid Margin="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="StatusTextBlock"
+                           VerticalAlignment="Center"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Text="Idle" />
+
+                <Button Grid.Column="2"
+                        Width="110"
+                        Click="StartBroadcastButton_OnClick"
+                        Content="Start" />
+
+                <Button Grid.Column="4"
+                        Width="110"
+                        Click="StopBroadcastButton_OnClick"
+                        Content="Stop" />
+            </Grid>
+        </GroupBox>
+
+        <GroupBox Grid.Row="6" Header="Session Log">
+            <ListBox x:Name="LogListBox"
+                     Margin="12"
+                     FontFamily="Consolas"
+                     HorizontalContentAlignment="Stretch" />
+        </GroupBox>
     </Grid>
 </Window>
+
+<!-- End of file. -->
