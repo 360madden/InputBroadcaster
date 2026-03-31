@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\InputBroadcaster.Core\InputBroadcaster.Core.csproj" />
+  </ItemGroup>
+</Project>
