@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InputBroadcaster.Core\InputBroadcaster.Core.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Routing\InputBroadcaster.Routing.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Windows\InputBroadcaster.Windows.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Configuration\InputBroadcaster.Configuration.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Diagnostics\InputBroadcaster.Diagnostics.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Sending\InputBroadcaster.Sending.csproj" />
+    <ProjectReference Include="..\InputBroadcaster.Input\InputBroadcaster.Input.csproj" />
+  </ItemGroup>
+</Project>
