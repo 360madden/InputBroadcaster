@@ -1,0 +1,11 @@
+{
+  "name": "inputbroadcaster",
+  "version": "0.1.0",
+  "description": "InputBroadcaster starter repository",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "author": "360madden <360madden@gmail.com>",
+  "license": "MIT"
+}
