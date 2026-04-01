@@ -15,8 +15,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\InputBroadcaster.Core\InputBroadcaster.Core.csproj" />
-    <ProjectReference Include="..\..\src\InputBroadcaster.Routing\InputBroadcaster.Routing.csproj" />
-    <ProjectReference Include="..\..\src\InputBroadcaster.Input\InputBroadcaster.Input.csproj" />
+    <ProjectReference Include="../../src/InputBroadcaster.Core/InputBroadcaster.Core.csproj" />
+    <ProjectReference Include="../../src/InputBroadcaster.Routing/InputBroadcaster.Routing.csproj" />
+    <ProjectReference Include="../../src/InputBroadcaster.Input/InputBroadcaster.Input.csproj" />
+    <ProjectReference Include="../../src/InputBroadcaster.Windows/InputBroadcaster.Windows.csproj" />
   </ItemGroup>
 </Project>

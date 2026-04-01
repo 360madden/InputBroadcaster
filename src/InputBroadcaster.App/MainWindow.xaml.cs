@@ -1,6 +1,6 @@
 // Version: 0.1.0
-// Total Characters: 8607
-// Purpose: Drive the MVP WPF shell by enumerating windows, storing leader/follower selection, polling leader-window keys, evaluating policy, and broadcasting allowed keys to the follower window.
+// Total Characters: 14528
+// Purpose: Drive the MVP WPF shell by enumerating windows, selecting leader and follower windows directly or by typed match rules, polling leader-window keys, evaluating policy, and broadcasting allowed keys to the follower window.
 
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -27,8 +27,10 @@ public partial class MainWindow : Window
     private readonly KeyboardStateTracker _keyboardStateTracker = new();
     private readonly IBroadcastPolicyEvaluator _broadcastPolicyEvaluator = new AllowlistBroadcastPolicyEvaluator();
     private readonly IInputSender _inputSender = new Win32MessageInputSender();
+    private readonly WindowMatcher _windowMatcher = new();
     private readonly DispatcherTimer _captureTimer;
 
+    private IReadOnlyList<WindowDescriptor> _lastEnumeratedWindows = Array.Empty<WindowDescriptor>();
     private bool _isBroadcastEnabled;
     private bool _isCapturePausedByFocus;
     private bool _wasLeaderForegroundOnPreviousPoll = true;
@@ -84,6 +86,26 @@ public partial class MainWindow : Window
         UpdateStatus();
     }
 
+    private void FindLeaderMatchButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        FindAndAssignWindow(
+            LeaderProcessFilterTextBox.Text,
+            LeaderTitleFilterTextBox.Text,
+            LeaderComboBox,
+            _windowRegistry.SetLeader,
+            "leader");
+    }
+
+    private void FindFollowerMatchButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        FindAndAssignWindow(
+            FollowerProcessFilterTextBox.Text,
+            FollowerTitleFilterTextBox.Text,
+            FollowerComboBox,
+            _windowRegistry.SetFollower,
+            "follower");
+    }
+
     private void StartBroadcastButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isBroadcastEnabled)
@@ -92,26 +114,42 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_windowRegistry.LeaderWindow is null)
+        RefreshWindows(appendLog: false);
+
+        var leaderWindow = ResolveWindowForStart(
+            "leader",
+            _windowRegistry.LeaderWindow,
+            LeaderProcessFilterTextBox.Text,
+            LeaderTitleFilterTextBox.Text,
+            LeaderComboBox,
+            _windowRegistry.SetLeader);
+
+        if (leaderWindow is null)
         {
-            AppendLog("WARN  Cannot start. Leader window is not set.");
             return;
         }
 
-        if (_windowRegistry.FollowerWindow is null)
+        var followerWindow = ResolveWindowForStart(
+            "follower",
+            _windowRegistry.FollowerWindow,
+            FollowerProcessFilterTextBox.Text,
+            FollowerTitleFilterTextBox.Text,
+            FollowerComboBox,
+            _windowRegistry.SetFollower);
+
+        if (followerWindow is null)
         {
-            AppendLog("WARN  Cannot start. Follower window is not set.");
             return;
         }
 
-        if (_windowRegistry.LeaderWindow.Handle == _windowRegistry.FollowerWindow.Handle)
+        if (leaderWindow.Handle == followerWindow.Handle)
         {
             AppendLog("WARN  Cannot start. Leader and follower must be different windows.");
             return;
         }
 
         _keyboardStateTracker.Reset();
-        _keyboardCapture.Prime(_windowRegistry.LeaderWindow.Handle);
+        _keyboardCapture.Prime(leaderWindow.Handle);
         _isBroadcastEnabled = true;
         _isCapturePausedByFocus = false;
         _wasLeaderForegroundOnPreviousPoll = true;
@@ -216,20 +254,24 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RefreshWindows()
+    private void RefreshWindows(bool appendLog = true)
     {
-        var windows = _windowEnumerator
+        _lastEnumeratedWindows = _windowEnumerator
             .GetTopLevelWindows()
             .Where(window => window.Handle != 0)
             .ToArray();
 
         _windowChoices.Clear();
-        foreach (var window in windows)
+        foreach (var window in _lastEnumeratedWindows)
         {
             _windowChoices.Add(new WindowChoice(window));
         }
 
-        AppendLog($"INFO  Enumerated {_windowChoices.Count} top-level windows.");
+        if (appendLog)
+        {
+            AppendLog($"INFO  Enumerated {_windowChoices.Count} top-level windows.");
+        }
+
         ReselectWindowChoices();
         UpdateStatus();
     }
@@ -238,6 +280,75 @@ public partial class MainWindow : Window
     {
         SelectChoice(LeaderComboBox, _windowRegistry.LeaderWindow);
         SelectChoice(FollowerComboBox, _windowRegistry.FollowerWindow);
+    }
+
+    private bool FindAndAssignWindow(
+        string? processFilter,
+        string? titleFilter,
+        ComboBox comboBox,
+        Action<WindowDescriptor?> assignWindow,
+        string role)
+    {
+        RefreshWindows(appendLog: false);
+
+        var match = _windowMatcher.FindFirstMatch(_lastEnumeratedWindows, processFilter, titleFilter);
+        if (match is null)
+        {
+            AppendLog($"WARN  No {role} window matched the typed process/title filter.");
+            return false;
+        }
+
+        assignWindow(match);
+        SelectChoice(comboBox, match);
+
+        if (string.Equals(role, "leader", StringComparison.OrdinalIgnoreCase))
+        {
+            _keyboardCapture.Prime(match.Handle);
+        }
+
+        AppendLog($"INFO  {Capitalize(role)} match resolved to {DescribeWindow(match)}");
+        UpdateStatus();
+        return true;
+    }
+
+    private WindowDescriptor? ResolveWindowForStart(
+        string role,
+        WindowDescriptor? currentWindow,
+        string? processFilter,
+        string? titleFilter,
+        ComboBox comboBox,
+        Action<WindowDescriptor?> assignWindow)
+    {
+        if (!string.IsNullOrWhiteSpace(processFilter) || !string.IsNullOrWhiteSpace(titleFilter))
+        {
+            var match = _windowMatcher.FindFirstMatch(_lastEnumeratedWindows, processFilter, titleFilter);
+            if (match is null)
+            {
+                AppendLog($"WARN  Cannot start. No {role} window matched the configured process/title filter.");
+                return null;
+            }
+
+            assignWindow(match);
+            SelectChoice(comboBox, match);
+            return match;
+        }
+
+        if (currentWindow is null)
+        {
+            AppendLog($"WARN  Cannot start. {Capitalize(role)} window is not set.");
+            return null;
+        }
+
+        var liveWindow = _lastEnumeratedWindows.FirstOrDefault(window => window.Handle == currentWindow.Handle);
+        if (liveWindow is null)
+        {
+            AppendLog($"WARN  Cannot start. Selected {role} window is no longer available.");
+            return null;
+        }
+
+        assignWindow(liveWindow);
+        SelectChoice(comboBox, liveWindow);
+        return liveWindow;
     }
 
     private static void SelectChoice(ComboBox comboBox, WindowDescriptor? window)
@@ -316,6 +427,13 @@ public partial class MainWindow : Window
         return window is null
             ? "not set"
             : $"{window.ProcessName} | {window.Title}";
+    }
+
+    private static string Capitalize(string value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? value
+            : string.Concat(char.ToUpperInvariant(value[0]), value[1..]);
     }
 
     private sealed class WindowChoice
